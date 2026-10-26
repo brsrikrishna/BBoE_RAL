@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BBoE: Leveraging Bundle of Edges for Kinodynamic Bidirectional Motion Planning</title>
+<meta name="description" content="BBoE is a bidirectional, kinodynamic, sampling-based motion planner that reuses a precomputed bundle of edges to find feasible trajectories quickly in cluttered environments. IEEE RA-L 2026.">
+<meta property="og:title" content="BBoE: Leveraging Bundle of Edges for Kinodynamic Bidirectional Motion Planning">
+<meta property="og:description" content="A bidirectional kinodynamic planner built on precomputed edge bundles. The only evaluated planner with at least 96% success on every system while attaining the lowest planning time on three of four.">
+<meta property="og:image" content="https://brsrikrishna.github.io/BBoE_RAL/assets/bboe_path_found_montage.png">
+<link rel="canonical" href="https://brsrikrishna.github.io/BBoE_RAL/">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="wrap">
+  <h1><span class="acr">BBoE</span>: Leveraging Bundle of Edges for Kinodynamic Bidirectional Motion Planning</h1>
+  <p class="authors">Srikrishna Bangalore Raghu<sup>1</sup> and Alessandro Roncone<sup>1</sup></p>
+  <p class="affil"><sup>1</sup>University of Colorado Boulder</p>
+  <p class="venue">IEEE Robotics and Automation Letters (RA-L), 2026</p>
+  <div class="btns">
+    <a class="btn disabled" href="#" title="Link will be added when the final version is published">&#128196; Paper (coming soon)</a>
+    <a class="btn primary" href="https://github.com/brsrikrishna/bidirectional_bundle_of_edges_BBoE">&#128187; Code</a>
+    <a class="btn" href="#video">&#127916; Video</a>
+    <a class="btn" href="#citation">&#128214; BibTeX</a>
+  </div>
+</header>
+
+<section class="hero wrap">
+  <figure>
+    <img src="assets/bboe_path_found_montage.png" alt="Final BBoE solutions on four unicycle difficulty tiers and on the unicycle, car-with-trailer, treaded vehicle and quadrotor systems">
+    <figcaption>BBoE solutions on unicycle environments of increasing clutter (left) and on four dynamical systems (right). The forward tree (blue) traces the reverse tree (red) into the goal region; the solution (green) consists of forward-tree edges.</figcaption>
+  </figure>
+  <div class="stats">
+    <div class="stat"><div class="n">&ge; 96%</div><div class="l">success on every system tested, the only planner to do so</div></div>
+    <div class="stat"><div class="n">3 of 4</div><div class="l">systems where BBoE has the lowest mean planning time</div></div>
+    <div class="stat"><div class="n">100%</div><div class="l">success on all four unicycle difficulty tiers, 50 seeds each</div></div>
+    <div class="stat"><div class="n">3D &ndash; 6D</div><div class="l">state spaces: unicycle, treaded vehicle, car with trailer, quadrotor</div></div>
+  </div>
+</section>
+
+<section class="wrap" id="abstract">
+  <h2>Abstract</h2>
+  <p>In this work, we introduce BBoE, a bidirectional, kinodynamic, sampling-based motion planner that consistently and quickly finds solutions in environments with varying obstacle clutter. The algorithm combines exploration and exploitation while relying on precomputed robot motions, resulting in efficient convergence towards the goal. Our key contributions include: i) a strategy to quickly find solutions in obstacle-rich spaces by leveraging a bundle of precomputed robot motions (i.e., edges); and ii) BBoE, a robust bidirectional kinodynamic planner that utilizes this strategy to produce fast and feasible solutions. Across four systems spanning 3D to 6D state spaces, BBoE is the only planner to achieve &ge; 96% success on every system while attaining the lowest planning time on three of four.</p>
+</section>
+
+<section class="wrap" id="video">
+  <h2>Video</h2>
+  <figure>
+    <video controls preload="metadata" playsinline poster="assets/bboe_path_found_montage.png">
+      <source src="assets/bboe_video.mp4" type="video/mp4">
+      Your browser does not support embedded video.
+    </video>
+    <figcaption>Supplementary video: the edge-selection strategy, the bidirectional search, and planning runs on all four systems.</figcaption>
+  </figure>
+</section>
+
+<section class="wrap" id="method">
+  <h2>Method</h2>
+  <p>Kinodynamic planners usually generate motions online, either through steering functions, which are expensive and hard to define for complex systems, or through Monte-Carlo forward propagation, which wastes effort in clutter. BBoE instead precomputes a large <em>bundle of edges</em> offline: short, dynamically feasible motions obtained by applying random controls for random durations. At planning time, the edges that start near the current state are transformed onto it and reused. Pose components are transformed away, so the bundle only needs to cover the kinodynamic subspace (velocities, steering and hitch angles), which is why 190 edges suffice for the unicycle and 50,000 to 100,000 for the 5D and 6D systems.</p>
+  <div class="grid g2">
+    <figure><img src="assets/FIN_ARCHITECTURE_2026.png" alt="BBoE architecture: exploration and exploitation phases"><figcaption><strong>Two phases.</strong> During exploration, the forward tree expands toward sampled states using the biased edges, while the reverse tree propagates random edges backward in time. During exploitation, the forward tree traces the reverse tree toward the goal using either the biased or the randomized edges.</figcaption></figure>
+    <figure><img src="assets/FINAL_EDGES.png" alt="2D projections of the edge bundles for each system"><figcaption><strong>Edge bundles.</strong> Two-dimensional projections of a subset of the edges for each system; every edge starts at the origin. The unicycle edges are the maneuver library of the GBRRT paper; the other bundles are sampled from continuous control and duration ranges.</figcaption></figure>
+    <figure><img src="assets/FIN_BIASED.png" alt="Biased edges"><figcaption><strong>Biased edges.</strong> Neighboring edges are sorted by how close their stored end state lands to the desired state; BBoE then propagates every N-th edge of the sorted list, skipping the neighbors of a colliding edge, which tend to hit the same obstacle.</figcaption></figure>
+    <figure><img src="assets/FIN_RANDOMIZED_2026.png" alt="Randomized edges"><figcaption><strong>Randomized edges.</strong> When the current and desired states stay fixed, as in exploitation, the biased set can stall on the same collisions. With probability 1 &minus; k<sub>bias</sub>, BBoE draws the same number of edges uniformly from the sorted list instead, which finds narrow passages the biased set misses.</figcaption></figure>
+  </div>
+</section>
+
+<section class="wrap" id="results">
+  <h2>Results</h2>
+  <p>All planners share a 5 s budget per trial, 50 random seeds, and, where applicable, the same edge bundle. Baselines: RRT, SST, GBRRT (each with Monte-Carlo and edge-bundle variants on the unicycle), BoE, and the search components of dB-RRT-F and dB-RRT-C. Columns E, M, H and VH are the easy, medium, hard and very-hard unicycle tiers, each 10 randomly generated environments; Uni, CWT, Tr and Qd are the fixed unicycle, car-with-trailer, treaded-vehicle and quadrotor environments.</p>
+  <h3>Success rate (%)</h3>
+  <div class="tablewrap">
+<table class="results">
+<thead><tr><th>Planner</th><th>Easy</th><th>Medium</th><th>Hard</th><th>Very Hard</th><th>Unicycle</th><th>CWT</th><th>Treaded</th><th>Quadrotor</th></tr></thead>
+<tbody>
+<tr><td>RRT</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td><td>96</td><td>80</td><td>90</td></tr>
+<tr><td>RRT-MC</td><td>100</td><td>100</td><td>92</td><td>88</td><td>100</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td></tr>
+<tr><td>RRT-EB</td><td>100</td><td>100</td><td>100</td><td>90</td><td>100</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td></tr>
+<tr><td>SST</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td><td>100</td><td>82</td><td>52</td></tr>
+<tr><td>SST-MC</td><td>100</td><td>100</td><td>100</td><td>82</td><td>100</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td></tr>
+<tr><td>SST-EB</td><td>100</td><td>100</td><td>100</td><td>88</td><td>100</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td></tr>
+<tr><td>BoE</td><td>100</td><td>62</td><td>60</td><td>18</td><td>48</td><td>0</td><td>96</td><td>0</td></tr>
+<tr><td>GBRRT</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td><td>100</td><td>88</td><td>88</td></tr>
+<tr><td>GBRRT-MC</td><td>100</td><td>100</td><td>98</td><td>100</td><td>100</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td></tr>
+<tr><td>GBRRT-EB</td><td>100</td><td>100</td><td>100</td><td>100</td><td>100</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td></tr>
+<tr><td>Db-RRT-F</td><td>100</td><td>100</td><td>90</td><td>52</td><td>100</td><td>86</td><td>78</td><td>24</td></tr>
+<tr><td>Db-RRT-C</td><td>100</td><td>100</td><td>96</td><td>70</td><td>100</td><td>98</td><td>100</td><td>48</td></tr>
+<tr class="ours"><td>BBoE</td><td>100</td><td>100</td><td>100</td><td>100</td><td>100</td><td>100</td><td>96</td><td>96</td></tr>
+</tbody>
+</table>
+  </div>
+  <h3>Cross-system evaluation</h3>
+  <p>Mean initial-solution time (top) and mean solution cost (bottom) over successful trials. BBoE reaches 0.23 s on the unicycle, 0.71 s on the car with trailer and 1.66 s on the 6D quadrotor in a narrow-passage environment, and stays within the 1.2&ndash;2.0 s cluster of bidirectional planners on the treaded vehicle.</p>
+  <div class="grid g4">
+    <figure><img src="assets/unicycle_time.png" alt="Unicycle solution time"><figcaption>Unicycle: solution time</figcaption></figure>
+    <figure><img src="assets/treaded_time.png" alt="Treaded solution time"><figcaption>Treaded: solution time</figcaption></figure>
+    <figure><img src="assets/cwt_time.png" alt="CWT solution time"><figcaption>CWT: solution time</figcaption></figure>
+    <figure><img src="assets/quadrotor_narrow_time.png" alt="Quadrotor solution time"><figcaption>Quadrotor: solution time</figcaption></figure>
+    <figure><img src="assets/unicycle_cost.png" alt="Unicycle solution cost"><figcaption>Unicycle: solution cost</figcaption></figure>
+    <figure><img src="assets/treaded_cost.png" alt="Treaded solution cost"><figcaption>Treaded: solution cost</figcaption></figure>
+    <figure><img src="assets/cwt_cost.png" alt="CWT solution cost"><figcaption>CWT: solution cost</figcaption></figure>
+    <figure><img src="assets/quadrotor_narrow_cost.png" alt="Quadrotor solution cost"><figcaption>Quadrotor: solution cost</figcaption></figure>
+  </div>
+  <h3>Scaling with obstacle clutter</h3>
+  <p>On the unicycle, BBoE becomes the fastest planner from the medium tier onward (0.13 s medium, 0.18 s hard, 0.35 s very hard) while keeping 100% success, and the gap widens with clutter: on very-hard environments it is about 1.4&times; faster than the next-best GBRRT-EB, while the dB-RRT family drops to 52% and 70% success.</p>
+  <div class="grid g4">
+    <figure><img src="assets/curated_easy_time.png" alt="Easy tier time"><figcaption>Easy: solution time</figcaption></figure>
+    <figure><img src="assets/curated_medium_time.png" alt="Medium tier time"><figcaption>Medium: solution time</figcaption></figure>
+    <figure><img src="assets/curated_hard_time.png" alt="Hard tier time"><figcaption>Hard: solution time</figcaption></figure>
+    <figure><img src="assets/curated_very_hard_time.png" alt="Very hard tier time"><figcaption>Very hard: solution time</figcaption></figure>
+    <figure><img src="assets/curated_easy_cost.png" alt="Easy tier cost"><figcaption>Easy: solution cost</figcaption></figure>
+    <figure><img src="assets/curated_medium_cost.png" alt="Medium tier cost"><figcaption>Medium: solution cost</figcaption></figure>
+    <figure><img src="assets/curated_hard_cost.png" alt="Hard tier cost"><figcaption>Hard: solution cost</figcaption></figure>
+    <figure><img src="assets/curated_very_hard_cost.png" alt="Very hard tier cost"><figcaption>Very hard: solution cost</figcaption></figure>
+  </div>
+</section>
+
+<section class="wrap" id="animations">
+  <h2>Planning in action</h2>
+  <p>Forward tree in blue, reverse tree in red, final solution in green. Each clip is one planning run until the first solution.</p>
+  <h3>BBoE across systems</h3>
+  <div class="grid g4">
+    <div class="card"><h4>Unicycle</h4><video autoplay muted loop playsinline preload="metadata"><source src="assets/bboe_execution.mp4" type="video/mp4"></video></div>
+    <div class="card"><h4>Treaded vehicle</h4><video autoplay muted loop playsinline preload="metadata"><source src="assets/bboe_treaded_execution.mp4" type="video/mp4"></video></div>
+    <div class="card"><h4>Car with trailer</h4><video autoplay muted loop playsinline preload="metadata"><source src="assets/bboe_car_with_trailer_execution.mp4" type="video/mp4"></video></div>
+    <div class="card"><h4>Quadrotor (6D)</h4><video autoplay muted loop playsinline preload="metadata"><source src="assets/bboe_quadrotor_execution.mp4" type="video/mp4"></video></div>
+  </div>
+  <h3>BBoE across unicycle difficulty tiers</h3>
+  <div class="grid g4">
+    <div class="card"><h4>Easy</h4><video autoplay muted loop playsinline preload="metadata"><source src="assets/bboe_unicycle_easy.mp4" type="video/mp4"></video></div>
+    <div class="card"><h4>Medium</h4><video autoplay muted loop playsinline preload="metadata"><source src="assets/bboe_unicycle_medium.mp4" type="video/mp4"></video></div>
+    <div class="card"><h4>Hard</h4><video autoplay muted loop playsinline preload="metadata"><source src="assets/bboe_unicycle_hard.mp4" type="video/mp4"></video></div>
+    <div class="card"><h4>Very hard</h4><video autoplay muted loop playsinline preload="metadata"><source src="assets/bboe_unicycle_very_hard.mp4" type="video/mp4"></video></div>
+  </div>
+  <h3>Baselines on a very-hard environment</h3>
+  <div class="grid g4">
+    <div class="card"><h4>RRT-MC</h4><video autoplay muted loop playsinline preload="metadata"><source src="assets/rrt_unicycle_very_hard.mp4" type="video/mp4"></video></div>
+    <div class="card"><h4>SST-MC</h4><video autoplay muted loop playsinline preload="metadata"><source src="assets/sst_unicycle_very_hard.mp4" type="video/mp4"></video></div>
+    <div class="card"><h4>GBRRT-MC</h4><video autoplay muted loop playsinline preload="metadata"><source src="assets/gbrrt_unicycle_very_hard.mp4" type="video/mp4"></video></div>
+    <div class="card"><h4>BBoE</h4><video autoplay muted loop playsinline preload="metadata"><source src="assets/bboe_unicycle_very_hard.mp4" type="video/mp4"></video></div>
+  </div>
+</section>
+
+<section class="wrap" id="limitations">
+  <h2>When does it fail?</h2>
+  <p>For a fixed bundle, BBoE is probabilistically complete with respect to the graph the bundle induces, but not over the full state space, and it claims no optimality. Its failure mode is a <em>coverage gap</em>: a passage that requires a maneuver absent from the bundle cannot be traversed regardless of the budget. The environment below makes this concrete for the unicycle. Its only passage is a pair of offset slots joined by a chamber with 0.12 m of free width, so crossing it needs a pivot in place or a turning radius under 0.1 m. The 190-edge maneuver library has neither (every edge lasts 1 s at 1 m/s or more, with a tightest turning radius of 0.64 m), so BBoE fails on all 50 seeds, while a hand-built continuous-control trajectory passes the same collision checker.</p>
+  <figure style="max-width:620px"><img src="assets/adversarial_keyhole.png" alt="Adversarial keyhole environment: BBoE trees after 5 s and a feasible continuous-control path"><figcaption>Both trees saturate their halves of the map without entering the keyhole; the green path is a feasible continuous-control trajectory through it.</figcaption></figure>
+</section>
+
+<section class="wrap" id="code">
+  <h2>Code and reproducibility</h2>
+  <p>The planner, all baselines, the edge bundles, the benchmark scripts, and the logs behind every table and figure are released under the MIT license at <a href="https://github.com/brsrikrishna/bidirectional_bundle_of_edges_BBoE">github.com/brsrikrishna/bidirectional_bundle_of_edges_BBoE</a>. Each benchmark is a single script with fixed seeds; the README lists the exact commands and the expected numbers.</p>
+</section>
+
+<section class="wrap" id="citation">
+  <h2>Citation</h2>
+<pre>@article{raghu2026bboe,
+  title   = {{BBoE}: Leveraging Bundle of Edges for Kinodynamic Bidirectional Motion Planning},
+  author  = {Bangalore Raghu, Srikrishna and Roncone, Alessandro},
+  journal = {IEEE Robotics and Automation Letters},
+  year    = {2026},
+  note    = {to appear}
+}</pre>
+</section>
+
+<footer class="wrap">
+  <p>University of Colorado Boulder &middot; <a href="https://github.com/brsrikrishna/bidirectional_bundle_of_edges_BBoE">Code</a> &middot; <a href="#top">Back to top</a></p>
+</footer>
+</body>
+</html>
